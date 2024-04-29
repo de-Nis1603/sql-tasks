@@ -14,3 +14,10 @@ class RegisterForm(FlaskForm):
     speciality = StringField('Speciality', validators=[DataRequired()])
     address = StringField('Address', validators=[DataRequired()])
     submit = SubmitField('Submit')
+
+
+class LoginForm(FlaskForm):
+    email = EmailField('Email', validators=[DataRequired()])
+    password = PasswordField('Password', validators=[DataRequired()])
+    remember_me = BooleanField('Remember me')
+    submit = SubmitField('Login')
