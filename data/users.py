@@ -21,4 +21,3 @@ class User(SqlAlchemyBase):
     modified_date = sqlalchemy.Column(sqlalchemy.DateTime,
                                       nullable=True)
     news = orm.relationship("Jobs", back_populates='user')
-    jobs = orm.relationship('Department', back_populates='user')
