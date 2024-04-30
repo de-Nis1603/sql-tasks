@@ -101,7 +101,10 @@ def edit_job(id):
     if form.validate_on_submit():
         print('validate')
         db_sess = db_session.create_session()
-        news = db_sess.query(Jobs).filter(Jobs.id == id,
+        if current_user.id == 1:
+            news = db_sess.query(Jobs).filter(Jobs.id == id).first()
+        else:
+            news = db_sess.query(Jobs).filter(Jobs.id == id,
                                              Jobs.user == current_user).first()
         if news:
             news.team_leader = form.team_leader.data
