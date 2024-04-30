@@ -2,8 +2,10 @@ from flask import Flask, render_template, redirect, request, abort
 from data import db_session
 from data.users import User
 from data.jobs import Jobs
+from data.departments import Department
 from forms.user import RegisterForm, LoginForm
 from forms.job import JobForm
+from forms.department import DepartmentForm
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 
 
@@ -14,11 +16,20 @@ app.config['SECRET_KEY'] = 'yandexlyceum_secret_key'
 
 
 @app.route('/')
+@app.route('/index')
 def start_page():
     db_sess = db_session.create_session()
     works = db_sess.query(Jobs)
     people = db_sess.query(User)
     return render_template('index.html', works=works, people=people)
+
+
+@app.route('/d')
+def d_start_page():
+    db_sess = db_session.create_session()
+    deps = db_sess.query(Department)
+    people = db_sess.query(User)
+    return render_template('dep_index.html', deps=deps, people=people)
 
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -121,6 +132,47 @@ def edit_job(id):
                            )
 
 
+@app.route('/dep/<int:id>', methods=['GET', 'POST'])
+@login_required
+def edit_dep(id):
+    form = DepartmentForm()
+    if request.method == "GET":
+        db_sess = db_session.create_session()
+        if current_user.id == 1:
+            news = db_sess.query(Department).filter(Department.id == id).first()
+        else:
+            news = db_sess.query(Department).filter(Department.id == id,
+                                          Department.user == current_user
+                                          ).first()
+        if news:
+            form.title.data = news.title
+            form.chief.data = news.chief
+            form.members.data = news.members
+            form.email.data = news.email
+        else:
+            abort(404)
+    if form.validate_on_submit():
+        print('validate')
+        db_sess = db_session.create_session()
+        if current_user.id == 1:
+            news = db_sess.query(Department).filter(Department.id == id).first()
+        else:
+            news = db_sess.query(Department).filter(Department.id == id,
+                                             Department.user == current_user).first()
+        if news:
+            news.title = form.title.data
+            news.chief = form.chief.data
+            news.email = form.email.data
+            news.members = form.members.data
+            db_sess.commit()
+            return redirect('/d')
+        else:
+            abort(404)
+    return render_template('add_dep.html',
+                           form=form
+                           )
+
+
 @app.route('/job_delete/<int:id>', methods=['GET', 'POST'])
 @login_required
 def news_delete(id):
@@ -130,6 +182,23 @@ def news_delete(id):
     else:
         news = db_sess.query(Jobs).filter(Jobs.id == id,
                                              Jobs.user == current_user).first()
+    if news:
+        db_sess.delete(news)
+        db_sess.commit()
+    else:
+        abort(404)
+    return redirect('/')
+
+
+@app.route('/dep_delete/<int:id>', methods=['GET', 'POST'])
+@login_required
+def dep_delete(id):
+    db_sess = db_session.create_session()
+    if current_user.id == 1:
+        news = db_sess.query(Department).filter(Department.id == id).first()
+    else:
+        news = db_sess.query(Department).filter(Department.id == id,
+                                             Department.user == current_user).first()
     if news:
         db_sess.delete(news)
         db_sess.commit()
@@ -157,6 +226,22 @@ def add_job():
         db_sess.commit()
         return redirect('/')
     return render_template('add_job.html', form=form)
+@app.route('/add_dep', methods=['GET', 'POST'])
+@login_required
+def add_dep():
+    form = DepartmentForm()
+    if form.validate_on_submit():
+        db_sess = db_session.create_session()
+        dep = Department()
+        dep.email = form.email.data
+        dep.chief = form.chief.data
+        dep.members = form.members.data
+        dep.title = form.title.data
+        current_user.deps.append(dep)
+        db_sess.merge(current_user)
+        db_sess.commit()
+        return redirect('/d')
+    return render_template('add_dep.html', form=form)
 
 
 def main():
