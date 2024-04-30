@@ -1,4 +1,4 @@
-from flask import Flask, render_template, redirect
+from flask import Flask, render_template, redirect, request, abort
 from data import db_session
 from data.users import User
 from data.jobs import Jobs
@@ -76,6 +76,46 @@ def login():
 def logout():
     logout_user()
     return redirect("/")
+
+
+@app.route('/job/<int:id>', methods=['GET', 'POST'])
+@login_required
+def edit_job(id):
+    form = JobForm()
+    if request.method == "GET":
+        db_sess = db_session.create_session()
+        if current_user.id == 1:
+            news = db_sess.query(Jobs).filter(Jobs.id == id).first()
+        else:
+            news = db_sess.query(Jobs).filter(Jobs.id == id,
+                                          Jobs.user == current_user
+                                          ).first()
+        if news:
+            form.job.data = news.job
+            form.work_size.data = news.work_size
+            form.team_leader.data = news.team_leader
+            form.collaborators.data = news.collaborators
+            form.is_finished.data = news.is_finished
+        else:
+            abort(404)
+    if form.validate_on_submit():
+        print('validate')
+        db_sess = db_session.create_session()
+        news = db_sess.query(Jobs).filter(Jobs.id == id,
+                                             Jobs.user == current_user).first()
+        if news:
+            news.team_leader = form.team_leader.data
+            news.job = form.job.data
+            news.work_size = form.work_size.data
+            news.is_finished = form.is_finished.data
+            news.collaborators = form.collaborators.data
+            db_sess.commit()
+            return redirect('/')
+        else:
+            abort(404)
+    return render_template('add_job.html',
+                           form=form
+                           )
 
 
 @app.route('/add_job', methods=['GET', 'POST'])
