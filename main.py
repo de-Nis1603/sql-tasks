@@ -3,6 +3,7 @@ from data import db_session
 from data.users import User
 from data.jobs import Jobs
 from forms.user import RegisterForm, LoginForm
+from forms.job import JobForm
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 
 
@@ -68,6 +69,27 @@ def login():
                                message="Invalid input",
                                form=form)
     return render_template('login.html', form=form)
+
+
+@app.route('/add_job', methods=['GET', 'POST'])
+@login_required
+def add_job():
+    form = JobForm()
+    if form.validate_on_submit():
+        db_sess = db_session.create_session()
+        job = Jobs()
+        job.team_leader = form.team_leader.data
+        job.job = form.job.data
+        job.work_size = form.work_size.data
+        job.collaborators = form.collaborators.data
+        job.start_date = form.start_date.data
+        job.finish_date = form.finish_date.data
+        job.is_finished = form.is_finished.data
+        current_user.news.append(job)
+        db_sess.merge(current_user)
+        db_sess.commit()
+        return redirect('/')
+    return render_template('add_job.html', form=form)
 
 
 def main():
